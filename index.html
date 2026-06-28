@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FBD — Design ERP</title>
+<style>
+  :root{
+    --paper:#FBFAF7; --surface:#fff; --ink:#1B1E24; --graphite:#5A6473; --faint:#8A93A1;
+    --line:#E7E4DC; --lineSoft:#F0EEE8; --blue:#26415E; --blueSoft:#EAF0F6;
+    --amber:#9A6B1C; --amberSoft:#FAF1DD; --green:#3F7A52; --greenSoft:#E7F0E9;
+    --red:#A8443B; --redSoft:#F8E8E6; --slate:#6B7686; --slateSoft:#EFF1F4;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--paper);color:var(--ink);height:100vh;overflow:hidden}
+  .mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+  button{font:inherit;cursor:pointer;border:none;background:none}
+  input,select,textarea{font:inherit;outline:none}
+  textarea{resize:vertical}
+  svg{width:16px;height:16px;flex-shrink:0}
+  .brand .mark svg{width:18px;height:18px}
+  .box svg{width:12px;height:12px}
+  .stat svg,.search svg{width:16px;height:16px}
+
+  .login{height:100vh;display:grid;place-items:center}
+  .login-card{width:380px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:32px}
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:24px}
+  .brand .mark{width:34px;height:34px;border-radius:8px;background:var(--blue);display:grid;place-items:center;color:#fff;font-weight:700}
+  .brand h1{font-size:17px;letter-spacing:-.3px}
+  .brand .sub{font-size:9px;letter-spacing:1.5px;color:var(--faint)}
+  label{font-size:12px;color:var(--faint);display:block;margin-bottom:6px}
+  .input,.field{width:100%;border:1px solid var(--line);background:var(--paper);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--ink)}
+  .field{padding:8px 10px;border-radius:9px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:10px;padding:10px 14px;font-size:14px;font-weight:600;background:var(--blue);color:#fff;width:100%}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--blue);width:auto;padding:7px 12px;font-weight:500;font-size:13px}
+  .btn.green{background:var(--green)} .btn.amber{background:var(--amber)} .btn.dark{background:var(--ink)}
+  .btn.small{padding:6px 10px;font-size:12px;width:auto}
+  .hint{font-size:11px;color:var(--faint);margin-top:14px;line-height:1.6}
+  .hint code{background:var(--slateSoft);padding:1px 5px;border-radius:4px;color:var(--slate)}
+  .err{background:var(--redSoft);color:var(--red);font-size:12px;padding:8px 10px;border-radius:8px;margin-top:12px}
+
+  .app{display:flex;height:100vh}
+  aside{width:236px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column}
+  .side-head{padding:16px 18px;border-bottom:1px solid var(--line)}
+  nav{flex:1;overflow-y:auto;padding:12px}
+  .nav-group{font-size:9px;letter-spacing:1.5px;color:var(--faint);text-transform:uppercase;padding:0 8px;margin:14px 0 4px}
+  .nav-item{display:flex;align-items:center;gap:10px;width:100%;border-radius:9px;padding:8px 10px;font-size:14px;color:var(--graphite);text-align:left;font-weight:500;margin-bottom:2px}
+  .nav-item.on{background:var(--blueSoft);color:var(--blue);font-weight:600}
+  .nav-item svg{width:16px;height:16px}
+  .side-foot{padding:12px;border-top:1px solid var(--line)}
+
+  main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+  header.top{height:56px;flex-shrink:0;border-bottom:1px solid var(--line);background:var(--surface);display:flex;align-items:center;justify-content:space-between;padding:0 24px}
+  .search{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:7px 12px;width:300px;color:var(--faint);font-size:13px}
+  .who{display:flex;align-items:center;gap:8px}
+  .avatar{width:30px;height:30px;border-radius:50%;background:var(--blueSoft);color:var(--blue);display:grid;place-items:center;font-size:12px;font-weight:600}
+  .scope{padding:6px 24px;background:var(--amberSoft);color:var(--amber);font-size:12px;display:flex;align-items:center;gap:6px}
+  .content{flex:1;overflow-y:auto;padding:24px}
+
+  h2.page{font-size:20px;letter-spacing:-.3px}
+  .page-sub{font-size:13px;color:var(--graphite);margin-top:2px}
+  .row-between{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .stat .l{font-size:11px;letter-spacing:.4px;text-transform:uppercase;color:var(--faint)}
+  .stat .v{font-size:28px;font-weight:600;margin-top:8px;line-height:1}
+  .stat .s{font-size:12px;color:var(--graphite);margin-top:4px}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:12px}
+  .pad{padding:16px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .grid21{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+  @media(max-width:860px){.stats{grid-template-columns:repeat(2,1fr)}.grid2,.grid3,.grid21{grid-template-columns:1fr}}
+
+  .thead,.trow{display:grid;grid-template-columns:2fr 1.1fr 1fr 1.2fr .9fr;align-items:center;padding:12px 16px}
+  .thead{border-bottom:1px solid var(--line);font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--faint);font-family:ui-monospace,monospace}
+  .trow{border-bottom:1px solid var(--lineSoft)} .trow:last-child{border-bottom:none}
+  .lead-name{font-size:14px;font-weight:500} .lead-id{font-size:10px;color:var(--faint)}
+  .lead-brief{font-size:12px;color:var(--graphite);margin-top:2px}
+  .val{font-size:14px;font-weight:500}
+  .pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:500}
+  .pill .dot{width:7px;height:7px;border-radius:50%}
+  .right{display:flex;justify-content:flex-end;gap:6px}
+  .tag{font-size:11px;padding:2px 8px;border-radius:6px;background:var(--slateSoft);color:var(--slate)}
+
+  .newform{padding:16px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .newform .full{grid-column:1/-1;display:flex;gap:10px;justify-content:flex-end}
+  @media(max-width:860px){.newform{grid-template-columns:1fr 1fr}}
+
+  .loading,.empty{padding:36px;text-align:center;color:var(--faint);font-size:14px}
+  .spin{display:inline-block;width:16px;height:16px;border:2px solid var(--line);border-top-color:var(--blue);border-radius:50%;animation:s .7s linear infinite;vertical-align:middle;margin-right:8px}
+  @keyframes s{to{transform:rotate(360deg)}}
+
+  .pcards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  @media(max-width:1100px){.pcards{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:760px){.pcards{grid-template-columns:1fr}}
+  .pcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;text-align:left;width:100%}
+  .bar{height:6px;background:var(--lineSoft);border-radius:99px;overflow:hidden}
+  .bar>i{display:block;height:100%;background:var(--blue);border-radius:99px}
+
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+  .tab{display:flex;align-items:center;gap:6px;border-radius:9px;padding:8px 12px;font-size:14px;color:var(--graphite);font-weight:500}
+  .tab.on{background:var(--ink);color:#fff;font-weight:600}
+
+  .check{display:flex;align-items:center;gap:10px;padding:6px 6px;border-radius:8px;font-size:14px;width:100%;text-align:left}
+  .box{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--line);display:grid;place-items:center;flex-shrink:0}
+  .box.on{background:var(--green);border-color:var(--green);color:#fff}
+  .kv{display:flex;justify-content:space-between;padding:7px 0;font-size:14px;border-bottom:1px solid var(--lineSoft)}
+  .kv:last-child{border-bottom:none}
+  .muted{color:var(--graphite)}
+  .sec{font-family:ui-monospace,monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);margin-bottom:10px}
+  .list-row{padding:12px 16px;border-bottom:1px solid var(--lineSoft)} .list-row:last-child{border-bottom:none}
+  .dashed{border:1px dashed var(--line);border-radius:12px}
+  .stack>*+*{margin-top:8px}
+  .flexrow{display:flex;align-items:center;gap:10px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+/* ===================== CONFIG ===================== */
+const API_URL = "https://script.google.com/macros/s/AKfycby2w5apI-g5APQzCEP5sItoh9U1SwJXwi_LezVPFtJL1lsc3nYa6evslt8r62dMAmry/exec";
+
+/* ===================== ICONS ===================== */
+const I = {
+  pen:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>',
+  dash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>',
+  users:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>',
+  file:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>',
+  folderK:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V4a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2"/></svg>',
+  list:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>',
+  folder:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2z"/></svg>',
+  chart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>',
+  bell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>',
+  sign:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 11.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v14l4-4h6"/><path d="m14 18 4-4 3 3-4 4h-3z"/></svg>',
+  layers:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 2 9 5-9 5-9-5 9-5z"/><path d="m3 12 9 5 9-5M3 17l9 5 9-5"/></svg>',
+  hard:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 18h20M4 18a8 8 0 0 1 16 0M12 6v4M9 7h6"/></svg>',
+  eye:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>',
+  clip:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3"/></svg>',
+  msg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+  chev:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>',
+  back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>',
+  arrow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>',
+  send:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 2-7 20-4-9-9-4 20-7z"/></svg>',
+  search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>',
+  warn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3z"/><path d="M12 9v4M12 17h.01"/></svg>',
+  pin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+};
+const MODICON={dashboard:I.dash,leads:I.users,requirement:I.file,proposals:I.sign,projects:I.folderK,tasks:I.list,documents:I.folder,reports:I.chart,notifications:I.bell};
+const MODLABEL={dashboard:'Dashboard',leads:'Leads (CRM)',requirement:'Requirement Forms',proposals:'Proposals & Fees',projects:'Projects',tasks:'My Tasks',documents:'Documents',reports:'Reports',notifications:'Notifications'};
+const MODGROUP={dashboard:'Workspace',notifications:'Workspace',leads:'Sales',requirement:'Sales',proposals:'Sales',projects:'Delivery',tasks:'Delivery',documents:'Records',reports:'Records'};
+
+/* ===================== CONSTANTS ===================== */
+const LEAD_STATUSES=['New','Contacted','Meeting Scheduled','Site Visit','Proposal Sent','Negotiation','Approved','Rejected'];
+const TONE={New:['--slate','--slateSoft'],Contacted:['--blue','--blueSoft'],'Meeting Scheduled':['--blue','--blueSoft'],'Site Visit':['--amber','--amberSoft'],'Proposal Sent':['--amber','--amberSoft'],Negotiation:['--amber','--amberSoft'],Approved:['--green','--greenSoft'],Rejected:['--red','--redSoft'],
+  Pending:['--slate','--slateSoft'],'In Progress':['--blue','--blueSoft'],Revision:['--amber','--amberSoft'],'Revision Required':['--amber','--amberSoft'],Completed:['--green','--greenSoft'],Draft:['--slate','--slateSoft'],Sent:['--amber','--amberSoft'],Active:['--blue','--blueSoft']};
+// client-side gating (server is the real authority)
+const SA='Super Admin',ARCH='Architect',ID_='Interior Designer',DR='Draftsman',SE='Site Engineer',ACC='Accountant',ADM='Admin',CL='Client';
+const STAFF=[SA,ARCH,ID_,DR,SE,ACC,ADM];
+const ACCESS={Leads:{w:[SA,ARCH,ADM]},Projects:{w:[SA,ARCH]},Requirements:{w:[SA,ARCH]},Proposals:{w:[SA,ARCH]},Tasks:{w:[SA,ARCH,ID_,DR,SE]},DesignStages:{w:[SA,ARCH,ID_,DR]},ExecutionItems:{w:[SA,SE]},Drawings:{w:[SA,ARCH,DR]},Reviews:{w:[SA]},DailyReports:{w:[SA,SE]},Comms:{w:[SA,ARCH,ID_,ADM]}};
+function canW(t){ return (ACCESS[t]&&ACCESS[t].w||[]).includes(state.user.role); }
+
+/* ===================== API ===================== */
+async function apiGet(action, params){
+  if(!API_URL||API_URL.indexOf('PASTE_')===0) throw new Error('API_URL not set');
+  const q=new URLSearchParams(Object.assign({action,token:state.token||''}, params||{}));
+  const r=await fetch(API_URL+'?'+q.toString()); const d=await r.json();
+  if(!d.ok) throw new Error(d.error||'Request failed'); return d;
+}
+async function apiPost(action, body){
+  if(!API_URL||API_URL.indexOf('PASTE_')===0) throw new Error('API_URL not set');
+  const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({action,token:state.token},body||{}))});
+  const d=await r.json(); if(!d.ok) throw new Error(d.error||'Request failed'); return d;
+}
+const list=(table,extra)=>apiGet('list',Object.assign({table},extra||{})).then(d=>d.rows);
+const create=(table,fields)=>apiPost('create',Object.assign({table},fields)).then(d=>d.row);
+const update=(table,id,patch)=>apiPost('update',{table,id,patch}).then(d=>d.row);
+const removeRow=(table,id)=>apiPost('remove',{table,id});
+
+/* ===================== STATE ===================== */
+const state={token:null,user:null,view:'dashboard',openId:null,projTab:'design',reqType:'Architecture',
+  leads:null,projects:null,stats:null,reqs:null,proposals:null,notifs:null,detail:null,allTasks:null,allDrawings:null};
+const root=document.getElementById('root');
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const inr=n=>'₹'+Number(n||0).toLocaleString('en-IN');
+const fmt=d=>{ if(!d)return'—'; const s=String(d).slice(0,10); const m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; const p=s.split('-'); return p.length===3?(+p[2])+' '+m[+p[1]-1]:s; };
+const TODAY='2026-06-28';
+const pill=l=>{const[fg,bg]=TONE[l]||TONE.New;return `<span class="pill" style="color:var(${fg});background:var(${bg})"><span class="dot" style="background:var(${fg})"></span>${esc(l)}</span>`;};
+
+/* ===================== RENDER ROOT ===================== */
+function render(){ state.user?renderApp():renderLogin(); }
+
+function renderLogin(){
+  const miss=!API_URL||API_URL.indexOf('PASTE_')===0;
+  root.innerHTML=`<div class="login"><div class="login-card">
+    <div class="brand"><div class="mark">${I.pen}</div><div><h1>FBD</h1><div class="sub mono">DESIGN · ERP</div></div></div>
+    <label>Access token</label><input id="tok" class="input" placeholder="e.g. ADMIN-001"/>
+    <div style="height:12px"></div><button class="btn" id="go">Sign in ${I.arrow}</button><div id="le"></div>
+    ${miss?`<div class="err" style="margin-top:14px">Set <b>API_URL</b> at the top of index.html first.</div>`:''}
+    <div class="hint">Tokens: <code>ADMIN-001</code> (owner), <code>ARCH-002</code>, <code>SITE-003</code>, <code>DESK-005</code>, <code>CLIENT-004</code>. Switch to see access change.</div>
+  </div></div>`;
+  $('go').onclick=doLogin; $('tok').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+}
+async function doLogin(){
+  const tok=$('tok').value.trim(), le=$('le');
+  if(!tok){le.innerHTML='<div class="err">Enter a token.</div>';return;}
+  le.innerHTML='<div class="hint"><span class="spin"></span>Checking…</div>'; state.token=tok;
+  try{
+    const d=await apiGet('login',{token:tok});
+    state.user=d.user; state.view=d.user.modules[0]||'dashboard';
+    render(); go(state.view);
+  }catch(err){ state.token=null; le.innerHTML='<div class="err">'+esc(err.message)+'</div>'; }
+}
+
+function renderApp(){
+  const u=state.user, groups=['Workspace','Sales','Delivery','Records'];
+  const nav=groups.map(g=>{const items=u.modules.filter(m=>MODGROUP[m]===g);if(!items.length)return'';
+    return `<div class="nav-group">${g}</div>`+items.map(m=>`<button class="nav-item ${state.view===m?'on':''}" data-v="${m}">${MODICON[m]} ${MODLABEL[m]}</button>`).join('');}).join('');
+  root.innerHTML=`<div class="app">
+    <aside><div class="side-head"><div class="brand" style="margin:0"><div class="mark">${I.pen}</div><div><h1>FBD</h1><div class="sub mono">DESIGN · ERP</div></div></div></div>
+      <nav>${nav}</nav><div class="side-foot"><button class="btn ghost" id="logout" style="width:100%">Sign out</button></div></aside>
+    <main><header class="top"><div class="search">${I.search}<span>Search projects, leads…</span></div>
+      <div class="who"><div class="avatar">${esc(u.name.split(' ').map(w=>w[0]).slice(0,2).join(''))}</div>
+        <div style="line-height:1.2"><div style="font-size:13px;font-weight:500">${esc(u.name)}</div><div style="font-size:10px;color:var(--faint)">${esc(u.role)}</div></div></div></header>
+      ${u.role!==SA?`<div class="scope">${I.warn} Viewing as <b>&nbsp;${esc(u.role)}</b>&nbsp;— modules and actions are scoped to this role.</div>`:''}
+      <div class="content" id="content"></div></main></div>`;
+  root.querySelectorAll('.nav-item').forEach(b=>b.onclick=()=>go(b.dataset.v));
+  $('logout').onclick=()=>{Object.assign(state,{token:null,user:null,leads:null,projects:null,stats:null,reqs:null,proposals:null,detail:null,openId:null});render();};
+}
+function setNav(){ root.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('on',b.dataset.v===state.view)); }
+function go(view){ state.view=view; state.openId=null; setNav(); renderView(); }
+function set(html){ const c=$('content'); if(c) c.innerHTML=html; }
+const LOAD='<div class="loading"><span class="spin"></span>Loading…</div>';
+
+/* ===================== VIEW DISPATCH ===================== */
+function renderView(){
+  switch(state.view){
+    case 'dashboard': return viewDashboard();
+    case 'leads': return viewLeads();
+    case 'requirement': return viewRequirement();
+    case 'proposals': return viewProposals();
+    case 'projects': return state.openId?viewProjectDetail():viewProjects();
+    case 'tasks': return viewTasks();
+    case 'documents': return viewDocuments();
+    case 'reports': return viewReports();
+    case 'notifications': return viewNotifications();
+  }
+}
+
+/* ===================== DASHBOARD ===================== */
+async function viewDashboard(){
+  set(`<h2 class="page">Studio overview</h2><p class="page-sub">Live from your Google Sheet</p><div id="ds">${LOAD}</div>`);
+  try{
+    if(!state.stats) state.stats=(await apiGet('stats')).stats;
+    if(!state.projects) state.projects=await list('Projects');
+    const s=state.stats, ps=state.projects;
+    let follow='';
+    if(state.user.modules.includes('leads')){
+      if(!state.leads) state.leads=await list('Leads');
+      const f=state.leads.filter(l=>l.followUp&&l.status!=='Rejected').slice(0,5);
+      follow=`<div><div class="sec">Client follow-ups</div><div class="card pad">${f.length?f.map(l=>`<div class="kv"><div><div style="font-weight:500">${esc(l.name)}</div><div class="muted" style="font-size:12px">${esc(l.brief)}</div></div><div class="muted" style="font-size:12px">${fmt(l.followUp)}</div></div>`).join(''):'<div class="muted" style="font-size:13px">No follow-ups.</div>'}</div></div>`;
+    }
+    $('ds').innerHTML=`
+      <div class="stats" style="margin-top:18px">
+        ${stat('Active projects',s.activeProjects,'in design or execution')}
+        ${stat('Pending tasks',s.openTasks,(s.delayedTasks||0)+' delayed')}
+        ${stat('Open pipeline',s.pipeline,inr(s.pipelineValue)+' in play','--blue')}
+        ${stat('Portfolio value',inr(s.portfolioValue),'across active projects')}
+      </div>
+      <div class="grid21">
+        <div><div class="sec">Execution status</div><div class="card pad">${ps.map(p=>`
+          <button class="kv" data-open="${p.id}" style="width:100%;text-align:left">
+            <div style="flex:1"><div class="flexrow"><span style="font-weight:500">${esc(p.name)}</span><span class="lead-id mono">${p.id}</span></div>
+              <div class="bar" style="margin-top:6px"><i style="width:${p.progress}%;background:var(${p.progress===100?'--green':'--blue'})"></i></div></div>
+            <div style="width:60px;text-align:right;font-weight:600">${p.progress}%</div></button>`).join('')}</div></div>
+        ${follow}
+      </div>`;
+    $('ds').querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openProject(b.dataset.open));
+  }catch(e){ set(errBox(e)); }
+}
+function stat(l,v,s,c){return `<div class="stat"><div class="l">${l}</div><div class="v" ${c?`style="color:var(${c})"`:''}>${v}</div><div class="s">${s||''}</div></div>`;}
+function errBox(e){return `<div class="card pad" style="color:var(--red)">${esc(e.message||e)}</div>`;}
+
+/* ===================== LEADS ===================== */
+async function viewLeads(){
+  set(`<div class="row-between"><div><h2 class="page">Leads</h2><p class="page-sub">advance a lead, convert when approved</p></div>${canW('Leads')?`<button class="btn small" id="newbtn">${I.plus} New lead</button>`:''}</div><div class="card" id="lc">${LOAD}</div><p class="hint" id="lh"></p>`);
+  try{ if(!state.leads) state.leads=await list('Leads'); renderLeadsCard(false); }catch(e){ $('lc').innerHTML=errBox(e); }
+}
+function renderLeadsCard(showNew){
+  const head=`<div class="thead"><div>Lead</div><div>Source</div><div>Value</div><div>Status</div><div class="right">Action</div></div>`;
+  const rows=!state.leads.length?'<div class="empty">No leads yet.</div>':state.leads.map(l=>{
+    let act; if(!canW('Leads')) act='<span class="muted" style="font-size:12px">read-only</span>';
+    else if(l.status==='Approved') act=`<button class="btn small green" data-act="convert" data-id="${l.id}">Convert ${I.arrow}</button>`;
+    else if(l.status==='Rejected') act='<span class="muted" style="font-size:12px">closed</span>';
+    else act=`<button class="btn ghost small" data-act="advance" data-id="${l.id}">Advance ${I.chev}</button>`;
+    return `<div class="trow"><div><div class="flexrow"><span class="lead-name">${esc(l.name)}</span><span class="lead-id mono">${l.id}</span></div><div class="lead-brief">${esc(l.brief)}${l.city?' · '+esc(l.city):''}</div></div>
+      <div class="muted" style="font-size:13px">${esc(l.source)}</div><div class="val">${inr(l.value)}</div><div>${pill(l.status)}</div><div class="right">${act}</div></div>`;}).join('');
+  $('lc').innerHTML=(showNew?leadForm():'')+head+rows;
+  $('lh').textContent='Statuses: '+LEAD_STATUSES.join(' → ');
+  const nb=$('newbtn'); if(nb) nb.onclick=()=>renderLeadsCard(!showNew);
+  $('lc').querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>leadAction(b));
+  if(showNew) wireLeadForm();
+}
+function leadForm(){return `<div class="newform">
+  <div><label>Name</label><input class="field" id="nf-name" placeholder="Client name"></div>
+  <div><label>Brief</label><input class="field" id="nf-brief" placeholder="e.g. 3BHK interior"></div>
+  <div><label>City</label><input class="field" id="nf-city" placeholder="Area"></div>
+  <div><label>Source</label><select class="field" id="nf-source"><option>Phone Call</option><option>WhatsApp</option><option>Instagram</option><option>Facebook</option><option>Website</option><option>Reference</option></select></div>
+  <div><label>Value (₹)</label><input class="field" id="nf-value" type="number" placeholder="0"></div>
+  <div><label>Phone</label><input class="field" id="nf-phone" placeholder="+91…"></div>
+  <div class="full"><button class="btn green small" id="nf-save">Save lead</button></div></div>`;}
+function wireLeadForm(){ $('nf-save').onclick=async e=>{
+  const g=id=>$(id).value.trim();
+  const f={name:g('nf-name'),brief:g('nf-brief'),city:g('nf-city'),source:$('nf-source').value,value:g('nf-value'),phone:g('nf-phone')};
+  if(!f.name){alert('Name is required');return;}
+  e.target.innerHTML='<span class="spin"></span>'; e.target.disabled=true;
+  try{ const row=await create('Leads',f); state.leads.unshift(row); state.stats=null; renderLeadsCard(false);}catch(err){alert(err.message);e.target.disabled=false;e.target.textContent='Save lead';}
+};}
+async function leadAction(b){
+  const id=b.dataset.id, act=b.dataset.act; b.disabled=true; b.innerHTML='<span class="spin"></span>';
+  try{
+    if(act==='advance'){ const row=await apiPost('leads.advance',{id}); state.leads=state.leads.map(x=>x.id===id?row.row:x); }
+    if(act==='convert'){ await apiPost('leads.convert',{id}); state.leads=state.leads.filter(x=>x.id!==id); state.projects=null; state.stats=null; }
+    renderLeadsCard(false);
+  }catch(e){ alert(e.message); renderLeadsCard(false); }
+}
+
+/* ===================== REQUIREMENT FORMS ===================== */
+async function viewRequirement(){
+  set(`<h2 class="page">Requirement Forms</h2><p class="page-sub">Questionnaire each project type starts with</p>
+    <div class="tabs" style="margin-top:14px" id="rt"></div><div class="grid21"><div class="card" id="rl">${LOAD}</div>
+    ${canW('Requirements')?`<div><div class="sec">Add question</div><div class="card pad stack">
+      <input class="field" id="rq" placeholder="Question text"><select class="field" id="rqt"><option>Short text</option><option>Long text</option><option>Number</option><option>Yes / No</option><option>Single choice</option><option>Multi choice</option></select>
+      <button class="btn small" id="radd">${I.plus} Add question</button></div></div>`:''}</div>`);
+  $('rt').innerHTML=['Architecture','Interior'].map(t=>`<button class="tab ${state.reqType===t?'on':''}" data-t="${t}">${t} form</button>`).join('');
+  $('rt').querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{state.reqType=b.dataset.t;state.reqs=null;viewRequirement();});
+  try{
+    if(!state.reqs) state.reqs=await list('Requirements');
+    const items=state.reqs.filter(r=>r.formType===state.reqType);
+    $('rl').innerHTML=items.length?items.map((r,i)=>`<div class="list-row flexrow"><span class="mono" style="color:var(--faint);width:24px">${String(i+1).padStart(2,'0')}</span>
+      <div style="flex:1;font-weight:500;font-size:14px">${esc(r.question)}</div><span class="tag">${esc(r.qtype)}</span>
+      ${canW('Requirements')?`<button data-del="${r.id}" style="color:var(--faint);padding:4px">${I.trash}</button>`:''}</div>`).join(''):'<div class="empty">No questions yet.</div>';
+    $('rl').querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{await removeRow('Requirements',b.dataset.del);state.reqs=null;viewRequirement();});
+    const add=$('radd'); if(add) add.onclick=async()=>{const q=$('rq').value.trim();if(!q)return;add.disabled=true;await create('Requirements',{formType:state.reqType,question:q,qtype:$('rqt').value});state.reqs=null;viewRequirement();};
+  }catch(e){ $('rl').innerHTML=errBox(e); }
+}
+
+/* ===================== PROPOSALS ===================== */
+async function viewProposals(){
+  set(`<div class="row-between"><div><h2 class="page">Proposals & Fees</h2><p class="page-sub">quotations with payment schedule</p></div>${canW('Proposals')?`<button class="btn small" id="pnew">${I.plus} New proposal</button>`:''}</div><div id="pwrap">${LOAD}</div>`);
+  try{ if(!state.proposals) state.proposals=await list('Proposals'); renderProposals(false);}catch(e){ $('pwrap').innerHTML=errBox(e); }
+}
+let propItems=[['Design fee',150000]];
+function renderProposals(showNew){
+  const total=its=>its.reduce((a,i)=>a+(Number(i[1])||0),0);
+  const form=showNew?`<div class="card pad" style="margin-bottom:14px">
+    <div class="grid2"><div><label>Client</label><input class="field" id="pc" placeholder="Client name"></div>
+      <div><label>Type</label><select class="field" id="pt"><option>Interior</option><option>Architecture</option></select></div></div>
+    <div class="muted" style="font-size:12px;margin:10px 0 6px">Line items</div><div id="pitems"></div>
+    <button id="paddline" class="muted" style="font-size:12px;font-weight:600;color:var(--blue)">+ Add line</button>
+    <div class="kv" style="margin-top:8px"><b>Total</b><b id="ptotal">${inr(total(propItems))}</b></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="btn green small" id="psave">${I.check} Save draft</button></div></div>`:'';
+  const cards=`<div class="grid2">${state.proposals.map(p=>`<div class="card pad">
+    <div class="row-between" style="margin-bottom:8px"><div class="flexrow"><b>${esc(p.client)}</b><span class="lead-id mono">${p.id}</span></div>${pill(p.status)}</div>
+    <div class="muted" style="font-size:12px;margin-bottom:8px">${esc(p.type)} · ${p.items.length} item(s)</div>
+    ${p.items.map(it=>`<div class="kv"><span class="muted">${esc(it[0])}</span><span class="mono">${inr(it[1])}</span></div>`).join('')}
+    <div class="kv"><b>Total</b><b class="mono">${inr(p.total)}</b></div>
+    <div class="muted" style="font-size:11px;margin:6px 0">Schedule: ${p.schedule.map(s=>esc(s[0])+' '+s[1]+'%').join(' · ')}</div>
+    <div style="display:flex;gap:6px">${canW('Proposals')&&p.status!=='Approved'?
+      `${p.status==='Draft'?`<button class="btn ghost small" data-sent="${p.id}">${I.send} Mark sent</button>`:''}<button class="btn green small" data-start="${p.id}">${I.arrow} Approve & start project</button>`
+      :p.status==='Approved'?`<span class="muted" style="font-size:12px;color:var(--green)">${I.check} Converted</span>`:''}</div></div>`).join('')}</div>`;
+  $('pwrap').innerHTML=form+cards;
+  const nb=$('pnew'); if(nb) nb.onclick=()=>{propItems=[['Design fee',150000]];renderProposals(!showNew);};
+  if(showNew){ renderPItems();
+    $('paddline').onclick=()=>{propItems.push(['',0]);renderPItems();};
+    $('psave').onclick=async e=>{const c=$('pc').value.trim();if(!c){alert('Client required');return;}e.target.disabled=true;
+      const row=await create('Proposals',{client:c,type:$('pt').value,items:propItems.filter(i=>i[0]),schedule:[['On signing',50],['On completion',50]]});
+      state.proposals.unshift(row);renderProposals(false);};
+  }
+  $('pwrap').querySelectorAll('[data-sent]').forEach(b=>b.onclick=async()=>{const r=await update('Proposals',b.dataset.sent,{status:'Sent'});state.proposals=state.proposals.map(x=>x.id===r.id?r:x);renderProposals(false);});
+  $('pwrap').querySelectorAll('[data-start]').forEach(b=>b.onclick=async()=>{b.disabled=true;b.innerHTML='<span class="spin"></span>';await apiPost('proposals.start',{id:b.dataset.start});state.proposals=null;state.projects=null;state.stats=null;go('projects');});
+}
+function renderPItems(){
+  const total=propItems.reduce((a,i)=>a+(Number(i[1])||0),0);
+  $('pitems').innerHTML=propItems.map((it,i)=>`<div style="display:flex;gap:8px;margin-bottom:6px">
+    <input class="field" data-pi="${i}" data-k="0" value="${esc(it[0])}" placeholder="Description">
+    <input class="field" data-pi="${i}" data-k="1" type="number" value="${it[1]}" style="width:140px"></div>`).join('');
+  $('ptotal').textContent=inr(total);
+  $('pitems').querySelectorAll('[data-pi]').forEach(inp=>inp.oninput=()=>{propItems[+inp.dataset.pi][+inp.dataset.k]=inp.dataset.k==='1'?inp.value:inp.value;renderPItemsTotal();});
+}
+function renderPItemsTotal(){ $('ptotal').textContent=inr(propItems.reduce((a,i)=>a+(Number(i[1])||0),0)); }
+
+/* ===================== PROJECTS ===================== */
+async function viewProjects(){
+  set(`<div class="row-between"><div><h2 class="page">Projects</h2><p class="page-sub" id="pcount">…</p></div></div><div id="pg">${LOAD}</div>`);
+  try{ if(!state.projects) state.projects=await list('Projects');
+    $('pcount').textContent=state.projects.length+' active';
+    $('pg').innerHTML=`<div class="pcards">${state.projects.map(p=>{const od=String(p.deadline)<TODAY;return `<button class="pcard" data-open="${p.id}">
+      <div class="row-between" style="margin-bottom:6px"><span class="tag">${esc(p.type)}</span><span class="lead-id mono">${p.id}</span></div>
+      <div style="font-weight:600">${esc(p.name)}</div><div class="muted flexrow" style="font-size:12px;margin-top:2px">${I.pin} ${esc(p.location)}</div>
+      <div style="margin-top:12px"><div class="row-between" style="font-size:12px;margin-bottom:4px"><span class="muted">Execution</span><b>${p.progress}%</b></div><div class="bar"><i style="width:${p.progress}%;background:var(${p.progress===100?'--green':'--blue'})"></i></div></div>
+      <div class="row-between" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--lineSoft)"><span class="muted" style="font-size:12px">${esc(p.client)}</span><span style="font-size:12px;font-weight:500;color:var(${od?'--red':'--graphite'})">${od?'overdue':'due '+fmt(p.deadline)}</span></div></button>`;}).join('')}</div>`;
+    $('pg').querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openProject(b.dataset.open));
+  }catch(e){ $('pg').innerHTML=errBox(e); }
+}
+function openProject(id){ state.view='projects'; state.openId=id; state.projTab='design'; state.detail=null; setNav(); viewProjectDetail(); }
+
+async function viewProjectDetail(){
+  set(`<button class="btn ghost small" id="pback" style="margin-bottom:12px">${I.back} All projects</button><div id="pd">${LOAD}</div>`);
+  $('pback').onclick=()=>go('projects');
+  try{
+    if(!state.detail||state.detail.project.id!==state.openId) state.detail=(await apiGet('project.detail',{id:state.openId})).detail;
+    renderDetail();
+  }catch(e){ $('pd').innerHTML=errBox(e); }
+}
+function renderDetail(){
+  const d=state.detail, p=d.project, od=String(p.deadline)<TODAY;
+  const tabs=[['design','Design',I.layers],['drawings','Drawings',I.file],['review','Review',I.eye],['execution','Execution',I.hard],['daily','Daily Report',I.clip],['tasks','Tasks',I.list],['comms','Communication',I.msg]];
+  $('pd').innerHTML=`<div class="card pad" style="margin-bottom:16px">
+    <div class="row-between"><div><div class="flexrow"><h2 class="page">${esc(p.name)}</h2><span class="lead-id mono" style="background:var(--blueSoft);color:var(--blue);padding:2px 8px;border-radius:6px">${p.id}</span></div>
+      <div class="flexrow muted" style="font-size:13px;margin-top:6px;gap:16px"><span>${esc(p.client)}</span><span>${I.pin} ${esc(p.location)}</span><span style="color:var(${od?'--red':'--graphite'})">due ${fmt(p.deadline)}</span></div></div>
+      <div style="text-align:right"><div class="muted" style="font-size:12px">Project value</div><div style="font-size:18px;font-weight:600">${inr(p.value)}</div></div></div>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--lineSoft)"><div class="row-between" style="font-size:12px;margin-bottom:4px"><span class="muted">Execution</span><b>${p.progress}%</b></div><div class="bar"><i style="width:${p.progress}%;background:var(${p.progress===100?'--green':'--blue'})"></i></div></div></div>
+    <div class="tabs" id="ptabs">${tabs.map(t=>`<button class="tab ${state.projTab===t[0]?'on':''}" data-t="${t[0]}">${t[2]} ${t[1]}</button>`).join('')}</div>
+    <div id="ptab"></div>`;
+  $('ptabs').querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{state.projTab=b.dataset.t;renderDetail();});
+  renderProjTab();
+}
+function renderProjTab(){
+  const d=state.detail, p=d.project, el=$('ptab');
+  if(state.projTab==='design'){
+    el.innerHTML=`<div class="card">${d.design.map((s,i)=>`<div class="list-row flexrow">
+      <span class="mono" style="width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(${s.status==='Completed'?'--greenSoft':'--slateSoft'});color:var(${s.status==='Completed'?'--green':'--slate'});font-size:12px">${i+1}</span>
+      <div style="flex:1"><div style="font-weight:500;font-size:14px">${esc(s.stage)}</div><div class="muted" style="font-size:12px">${esc(s.who)}</div></div>
+      ${pill(s.status)}${canW('DesignStages')&&s.status!=='Completed'?`<button class="btn ghost small" data-ds="${s.id}" data-st="${s.status}">Advance</button>`:''}</div>`).join('')}</div>`;
+    el.querySelectorAll('[data-ds]').forEach(b=>b.onclick=async()=>{const order=['Pending','In Progress','Completed'];const next=order[Math.min(order.indexOf(b.dataset.st)+1,2)];b.disabled=true;await update('DesignStages',b.dataset.ds,{status:next});state.detail=null;state.projects=null;await viewProjectDetail();});
+  }
+  else if(state.projTab==='execution'){
+    const stages={}; d.execution.forEach(x=>{(stages[x.stage]=stages[x.stage]||[]).push(x);});
+    el.innerHTML=`<div class="stack">${Object.keys(stages).map(stg=>{const its=stages[stg];const done=its.filter(i=>i.done).length;
+      return `<div class="card pad"><div class="row-between" style="margin-bottom:8px"><div class="flexrow" style="font-weight:500;font-size:14px">${I.hard} ${esc(stg)}</div><span class="muted" style="font-size:12px">${done}/${its.length} done</span></div>
+        ${its.map(it=>`<button class="check" data-ex="${it.id}" data-done="${it.done?1:0}" ${canW('ExecutionItems')?'':'disabled'} style="color:var(${it.done?'--faint':'--ink'})"><span class="box ${it.done?'on':''}">${it.done?I.check:''}</span><span style="${it.done?'text-decoration:line-through':''}">${esc(it.item)}</span></button>`).join('')}</div>`;}).join('')}</div>
+      <p class="hint">Tick items to update progress — dashboard & reports recompute.</p>`;
+    el.querySelectorAll('[data-ex]').forEach(b=>b.onclick=async()=>{const nd=b.dataset.done==='1'?false:true;
+      // optimistic
+      d.execution=d.execution.map(x=>x.id===b.dataset.ex?Object.assign({},x,{done:nd}):x);
+      const items=d.execution; p.progress=items.length?Math.round(items.filter(i=>i.done).length/items.length*100):0;
+      state.projects=null; state.stats=null; renderDetail();
+      try{ await update('ExecutionItems',b.dataset.ex,{done:nd}); }catch(e){ alert(e.message); }});
+  }
+  else if(state.projTab==='drawings'){
+    el.innerHTML=`<div class="card"><div class="thead" style="grid-template-columns:2fr 1.2fr .6fr 1.2fr .8fr"><div>Drawing</div><div>Folder</div><div>Ver</div><div>Status</div><div class="right">Date</div></div>
+      ${d.drawings.length?d.drawings.map(x=>`<div class="trow" style="grid-template-columns:2fr 1.2fr .6fr 1.2fr .8fr"><div class="flexrow">${I.file} ${esc(x.name)}</div><div class="muted">${esc(x.folder)}</div><div class="mono" style="font-size:12px">${esc(x.version)}</div><div>${pill(x.status)}</div><div class="right muted" style="font-size:12px">${fmt(x.date)}</div></div>`).join(''):'<div class="empty">No drawings yet — add from Documents.</div>'}</div>`;
+  }
+  else if(state.projTab==='review'){
+    const isOwner=state.user.role===SA;
+    el.innerHTML=`<div class="grid21"><div><div class="sec">Review log</div><div class="card">${d.reviews.length?d.reviews.map(r=>`<div class="list-row"><div class="row-between" style="margin-bottom:4px"><span class="flexrow" style="font-weight:500;font-size:14px">${I.file} ${esc(r.drawing)}</span>${pill(r.type)}</div><div style="font-size:14px">${esc(r.text)}</div><div class="muted" style="font-size:12px;margin-top:4px">${esc(r.author)} · ${fmt(r.date)}</div></div>`).join(''):'<div class="empty">No reviews yet.</div>'}</div></div>
+      <div><div class="sec">Owner action</div><div class="card pad stack">${isOwner?'':'<div class="hint" style="margin:0 0 6px;color:var(--amber)">Approve / revision is owner-only.</div>'}
+        <select class="field" id="rvd">${d.drawings.map(x=>`<option>${esc(x.name)}</option>`).join('')||'<option>No drawings</option>'}</select>
+        <textarea class="field" id="rvt" rows="3" placeholder="Comment / note…"></textarea>
+        ${isOwner?`<div style="display:flex;gap:8px"><button class="btn green small" id="rvok">${I.check} Approve</button><button class="btn amber small" id="rvrev">Revision</button></div>`:''}</div></div></div>`;
+    if(isOwner){
+      const act=async type=>{const drawing=$('rvd').value;if(!drawing||drawing==='No drawings')return;await create('Reviews',{projectId:p.id,drawing,type,text:$('rvt').value.trim()||(type==='Approved'?'Approved.':'Revision required.')});state.detail=null;await viewProjectDetail();};
+      $('rvok').onclick=()=>act('Approved'); $('rvrev').onclick=()=>act('Revision Required');
+    }
+  }
+  else if(state.projTab==='daily'){
+    const can=[SA,SE].includes(state.user.role);
+    el.innerHTML=`<div class="grid21"><div><div class="sec">Submitted reports</div><div class="card">${d.dailyReports.length?d.dailyReports.map(r=>`<div class="list-row"><div class="row-between" style="margin-bottom:4px"><span style="font-weight:500;font-size:14px">${esc(r.shift)} · ${fmt(r.date)}</span><b style="font-size:12px">${r.progress}%</b></div><div style="font-size:14px">${esc(r.note)}</div>${r.issues?`<div style="font-size:12px;color:var(--red);margin-top:2px">Issue: ${esc(r.issues)}</div>`:''}${r.material?`<div class="muted" style="font-size:12px">Material: ${esc(r.material)}</div>`:''}</div>`).join(''):'<div class="empty">No reports yet.</div>'}</div></div>
+      <div><div class="sec">New report</div><div class="card pad stack">${can?'':'<div class="hint" style="margin:0 0 6px;color:var(--amber)">Site Engineer / owner only.</div>'}
+        <select class="field" id="drs" ${can?'':'disabled'}><option>Morning</option><option>Evening</option></select>
+        <input class="field" id="drp" type="number" value="70" ${can?'':'disabled'} placeholder="Progress %">
+        <textarea class="field" id="drn" rows="2" placeholder="Update…" ${can?'':'disabled'}></textarea>
+        <input class="field" id="dri" placeholder="Issues (optional)" ${can?'':'disabled'}>
+        <input class="field" id="drm" placeholder="Material requirement (optional)" ${can?'':'disabled'}>
+        ${can?`<button class="btn small" id="drsave">${I.send} Submit report</button>`:''}</div></div></div>`;
+    if(can) $('drsave').onclick=async e=>{e.target.disabled=true;await create('DailyReports',{projectId:p.id,shift:$('drs').value,progress:$('drp').value,note:$('drn').value.trim(),issues:$('dri').value.trim(),material:$('drm').value.trim()});state.detail=null;await viewProjectDetail();};
+  }
+  else if(state.projTab==='tasks'){
+    el.innerHTML=`<div class="card">${d.tasks.length?d.tasks.map(t=>`<div class="list-row flexrow"><div style="flex:1"><div style="font-weight:500;font-size:14px">${esc(t.title)}</div><div class="muted" style="font-size:12px">${esc(t.assignee)} · due ${fmt(t.due)}${String(t.due)<TODAY&&t.status!=='Completed'?' · <span style="color:var(--red)">overdue</span>':''}</div></div>
+      <div style="width:80px"><div class="bar"><i style="width:${t.completion}%"></i></div></div>
+      <span class="tag" style="color:var(${t.priority==='High'?'--red':'--amber'});background:var(${t.priority==='High'?'--redSoft':'--amberSoft'})">${esc(t.priority)}</span>${pill(t.status)}
+      ${canW('Tasks')&&t.status!=='Completed'?`<button class="btn ghost small" data-tk="${t.id}" data-st="${t.status}">Advance</button>`:''}</div>`).join(''):'<div class="empty">No tasks.</div>'}</div>`;
+    el.querySelectorAll('[data-tk]').forEach(b=>b.onclick=async()=>{const order=['Pending','In Progress','Completed'];const next=order[Math.min(order.indexOf(b.dataset.st)+1,2)];const comp=next==='Completed'?100:next==='In Progress'?50:0;b.disabled=true;await update('Tasks',b.dataset.tk,{status:next,completion:comp});state.detail=null;state.stats=null;await viewProjectDetail();});
+  }
+  else if(state.projTab==='comms'){
+    const canClient=[SA,ARCH,ID_,ADM].includes(state.user.role);
+    el.innerHTML=`<div class="grid2">
+      <div><div class="sec">Internal notes</div><div class="card pad">
+        <div style="display:flex;gap:8px;margin-bottom:10px"><input class="field" id="cin" placeholder="Note for the team…"><button class="btn small" id="cinb">${I.send}</button></div>
+        ${d.comms.internal.length?d.comms.internal.map(c=>`<div class="kv" style="display:block"><div style="font-size:14px">${esc(c.text)}</div><div class="muted" style="font-size:12px">${esc(c.author)} · ${fmt(c.date)}</div></div>`).join(''):'<div class="muted" style="font-size:13px;text-align:center;padding:8px">No notes yet.</div>'}</div></div>
+      <div><div class="sec">Client communication</div><div class="card pad">
+        ${canClient?`<div class="stack" style="margin-bottom:10px"><select class="field" id="ck"><option>Meeting</option><option>Call</option><option>Follow-up</option><option>Approval</option></select><div style="display:flex;gap:8px"><input class="field" id="ct" placeholder="Summary…"><button class="btn small" id="ctb">${I.send}</button></div></div>`:'<div class="hint" style="margin:0 0 8px;color:var(--amber)">Client log read-only for your role.</div>'}
+        ${d.comms.client.length?d.comms.client.map(c=>`<div class="kv" style="display:block"><div class="flexrow"><span class="tag" style="background:var(--blueSoft);color:var(--blue)">${esc(c.subKind||'Note')}</span><span class="muted" style="font-size:12px">${fmt(c.date)}</span></div><div style="font-size:14px;margin-top:4px">${esc(c.text)}</div></div>`).join(''):'<div class="muted" style="font-size:13px;text-align:center;padding:8px">No client log.</div>'}</div></div></div>`;
+    $('cinb').onclick=async()=>{const v=$('cin').value.trim();if(!v)return;await create('Comms',{projectId:p.id,channel:'internal',text:v});state.detail=null;await viewProjectDetail();};
+    if(canClient&&$('ctb')) $('ctb').onclick=async()=>{const v=$('ct').value.trim();if(!v)return;await create('Comms',{projectId:p.id,channel:'client',subKind:$('ck').value,text:v});state.detail=null;await viewProjectDetail();};
+  }
+}
+
+/* ===================== MY TASKS ===================== */
+async function viewTasks(){
+  set(`<h2 class="page">${state.user.role===SA?'All tasks':'My tasks'}</h2><p class="page-sub" id="tcount">…</p><div class="card" id="tw" style="margin-top:14px">${LOAD}</div>`);
+  try{
+    if(!state.allTasks) state.allTasks=await list('Tasks');
+    if(!state.projects) state.projects=await list('Projects');
+    const pname={}; state.projects.forEach(p=>pname[p.id]=p.name);
+    let ts=state.allTasks; if(state.user.role!==SA) ts=ts.filter(t=>t.assignee===state.user.name);
+    $('tcount').textContent=ts.length+' task(s)'+(state.user.role!==SA?' assigned to you':'');
+    $('tw').innerHTML=ts.length?ts.map(t=>`<div class="list-row flexrow"><div style="flex:1"><div style="font-weight:500;font-size:14px">${esc(t.title)}</div><div class="muted" style="font-size:12px">${esc(pname[t.projectId]||t.projectId)} · ${esc(t.assignee)} · due ${fmt(t.due)}${String(t.due)<TODAY&&t.status!=='Completed'?' · <span style="color:var(--red)">overdue</span>':''}</div></div>
+      <div style="width:80px"><div class="bar"><i style="width:${t.completion}%"></i></div></div>${pill(t.status)}</div>`).join(''):'<div class="empty">Nothing assigned.</div>';
+  }catch(e){ $('tw').innerHTML=errBox(e); }
+}
+
+/* ===================== DOCUMENTS ===================== */
+async function viewDocuments(){
+  const folders=['Architecture','Interior','Structural','Electrical','Plumbing','3D','BOQ','PDF'];
+  set(`<div class="row-between"><div><h2 class="page">Documents</h2><p class="page-sub">folder-wise across all projects</p></div>${canW('Drawings')?`<button class="btn small" id="dadd">${I.plus} Add file</button>`:''}</div><div id="dform"></div><div id="dgrid">${LOAD}</div>`);
+  try{
+    if(!state.allDrawings) state.allDrawings=await list('Drawings');
+    if(!state.projects) state.projects=await list('Projects');
+    const all=state.allDrawings, pname={}; state.projects.forEach(p=>pname[p.id]=p.name);
+    $('dgrid').innerHTML=`<div class="grid3" style="grid-template-columns:repeat(4,1fr)">${folders.map(f=>{const fs=all.filter(d=>d.folder===f);
+      return `<div class="card pad"><div class="flexrow" style="margin-bottom:10px">${I.folder}<b style="font-size:14px">${f}</b><span class="muted" style="margin-left:auto;font-size:12px">${fs.length}</span></div>
+        ${fs.length?fs.map(d=>`<div class="kv" style="display:block"><div style="font-size:12px;font-weight:500">${esc(d.name)}</div><div class="row-between"><span class="muted" style="font-size:11px">${esc(pname[d.projectId]||'')}</span><span class="mono muted" style="font-size:11px">${esc(d.version)}</span></div></div>`).join(''):'<div class="muted" style="font-size:12px">Empty</div>'}</div>`;}).join('')}</div>`;
+    const add=$('dadd'); if(add) add.onclick=()=>{
+      $('dform').innerHTML=`<div class="card pad" style="margin-bottom:14px"><div class="grid3"><div><label>Project</label><select class="field" id="dpid">${state.projects.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></div>
+        <div><label>Folder</label><select class="field" id="dfolder">${folders.map(f=>`<option>${f}</option>`).join('')}</select></div><div><label>File name</label><input class="field" id="dname" placeholder="e.g. First Floor Plan"></div></div>
+        <div style="margin-top:10px"><button class="btn green small" id="dsave">${I.check} Add to project</button></div></div>`;
+      $('dsave').onclick=async e=>{const n=$('dname').value.trim();if(!n)return;e.target.disabled=true;await create('Drawings',{projectId:$('dpid').value,folder:$('dfolder').value,name:n});state.allDrawings=null;state.detail=null;viewDocuments();};
+    };
+  }catch(e){ $('dgrid').innerHTML=errBox(e); }
+}
+
+/* ===================== REPORTS ===================== */
+async function viewReports(){
+  set(`<h2 class="page">Reports</h2><p class="page-sub">computed live · exportable to PDF/Excel in production</p><div id="rw" style="margin-top:14px">${LOAD}</div>`);
+  try{
+    if(!state.stats) state.stats=(await apiGet('stats')).stats;
+    if(!state.projects) state.projects=await list('Projects');
+    const s=state.stats, ps=state.projects;
+    const rows=[['Active projects',s.activeProjects],['Avg execution',Math.round(ps.reduce((a,p)=>a+p.progress,0)/(ps.length||1))+'%'],['Open tasks',s.openTasks],['Delayed tasks',s.delayedTasks],['Pipeline value',inr(s.pipelineValue)],['Portfolio value',inr(s.portfolioValue)]];
+    $('rw').innerHTML=`<div class="grid2"><div class="card pad"><div class="sec">Studio snapshot</div>${rows.map(r=>`<div class="kv"><span class="muted">${r[0]}</span><b class="mono">${r[1]}</b></div>`).join('')}</div>
+      <div class="card pad"><div class="sec">Project execution</div>${ps.map(p=>`<div style="padding:8px 0;border-bottom:1px solid var(--lineSoft)"><div class="row-between" style="font-size:14px;margin-bottom:4px"><span>${esc(p.name)}</span><b>${p.progress}%</b></div><div class="bar"><i style="width:${p.progress}%;background:var(${p.progress===100?'--green':'--blue'})"></i></div></div>`).join('')}</div></div>`;
+  }catch(e){ $('rw').innerHTML=errBox(e); }
+}
+
+/* ===================== NOTIFICATIONS ===================== */
+async function viewNotifications(){
+  set(`<h2 class="page">Notifications</h2><p class="page-sub">auto-generated from live project state</p><div class="card" id="nw" style="margin-top:14px">${LOAD}</div>`);
+  try{
+    const ns=(await apiGet('notifications')).notifications;
+    const col={red:'--red',amber:'--amber',blue:'--blue'};
+    $('nw').innerHTML=ns.length?ns.map(n=>`<div class="list-row flexrow" style="align-items:flex-start"><span style="width:8px;height:8px;border-radius:50%;background:var(${col[n.tone]||'--slate'});margin-top:6px"></span><div><div style="font-weight:500;font-size:14px">${esc(n.title)}</div><div class="muted" style="font-size:12px;margin-top:2px">${esc(n.body)}</div></div></div>`).join(''):'<div class="empty">All clear.</div>';
+  }catch(e){ $('nw').innerHTML=errBox(e); }
+}
+
+render();
+</script>
+</body>
+</html>
